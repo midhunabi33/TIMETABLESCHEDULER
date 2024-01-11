@@ -1,0 +1,11 @@
+def viewschedule():
+    root=Toplevel()
+    head=Label(root,text='SCHEDULE')
+    head.grid(row=0,column=0)
+    for row in range(6):
+        for col in range(5):
+            if col==0:
+                button = tk.Button(root, text='Day'+str(row+1), command=lambda r=row, c=col: button_click(r, c))    
+            else:
+                button = tk.Button(root, text="hour"+str(col+1), command=lambda r=row, c=col: button_click(r, c))
+            button.grid(row=row, column=col, padx=10, pady=5)
