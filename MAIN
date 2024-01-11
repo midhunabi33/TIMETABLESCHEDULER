@@ -6,8 +6,8 @@ from tkinter import ttk
 
 
 # Creating object for tkinter app
-app = Tk()
-app.title('ADMIN')
+mainapp = Tk()
+mainapp.title('BHC')
 
 
 subjecttype = tk.StringVar()  # Make subjecttype a global variable
@@ -68,12 +68,23 @@ def subjectframe():
     practical=Radiobutton(course,text='Practical',variable=subjecttype,value='practical',font=('Verdana',14))
     practical.grid(row=6,column=1)
 
+    yearlabel=Label(course,text='Selectyear',font=('Verdana',14))
+    yearlabel.grid(row=7,column=0)
 
+    year_options = ['Year 1', 'Year 2', 'Year 3']
+    selected_year = tk.StringVar()
+
+
+    year= ttk.Combobox(course, values=year_options, textvariable=selected_year)
+    year.grid(row=7, column=1)
+    year.set(year_options[0])
+
+    
     hourslabel=Label(course,text='Hours perweek',font=('Verdana',14))
-    hourslabel.grid(row=7,column=0,pady=20)
+    hourslabel.grid(row=8,column=0,pady=20)
     
     hours=Entry(course)
-    hours.grid(row=7,column=1,padx=10)
+    hours.grid(row=8,column=1,padx=10)
     
     subjectcontainer=Frame(course,width=500,height=300,borderwidth=1,relief='solid')
     subjectcontainer.grid(row=1,column=4,rowspan=20,padx=20,pady=20)
@@ -106,7 +117,7 @@ def subjectframe():
 
 
 
-    coursedetails=firebase.get('/course',None)
+    coursedetails=ref.child('course').get()
     #print(coursedetails)
 
     if coursedetails is not None:
@@ -144,7 +155,7 @@ def subjectframe():
         coursecodedata = coursecode.get()
         coursenamedata = coursename.get()
         subjecttypedata = subjecttype.get()
-        yeardata=year.get()
+        yeardata=selected_year.get()
         hoursdata=hours.get()
         datacont={
         'coursename':coursenamedata,
@@ -153,18 +164,41 @@ def subjectframe():
         'hours':hoursdata,
         'year':yeardata
         }
+        ref.child('courseyearwise').child(yeardata).update({coursecodedata:datacont})
         ref.child('course').update({coursecodedata:datacont})
         messagebox.showinfo("ADDED", "COURSE SUCCESSFULLY ADDED") 
         root.destroy()
         subjectframe()
     
-
+    def updatesubject():
+        coursecodedata = coursecode.get()
+        coursenamedata = coursename.get()
+        subjecttypedata = subjecttype.get()
+        yeardata=selected_year.get()
+        hoursdata=hours.get()
+        datacont={
+        'coursename':coursenamedata,
+        'coursetype':subjecttypedata,
+        'staff':'NA',
+        'hours':hoursdata,
+        'year':yeardata
+        }
+        if coursecodedata in coursedetails:
+            ref.child('courseyearwise').child(yeardata).update({coursecodedata:datacont})
+            ref.child('course').update({coursecodedata:datacont})
+            messagebox.showinfo("UPDATED", "COURSE UPDATED SUCCESSFULLY")
+            root.destroy()
+            subjectframe()
+        else:
+            messagebox.showinfo("INVALID","COURSE NOT AVAILABLE") 
 #delete subject function definition
     def deletesubject():
         coursecodedata=coursecode.get()
+        yearselected=selected_year.get()
         #print(coursecodedata in coursedetails)
         if coursecodedata in coursedetails:
             ref.child('course').child(coursecodedata).delete()
+            ref.child('course').child(yearselected).child(coursecodedata).delete()
             messagebox.showinfo("DELETED", "COURSE REMOVED SUCCESSFULLY") 
         else:
             messagebox.showinfo("INVALID","COURSE NOT AVAILABLE") 
@@ -173,7 +207,7 @@ def subjectframe():
 
         
     addsubject = tk.Button(course, text='Add Subject', command=lambda: adddata(subjecttype))
-    updatesubject=Button(course,text='Update Subject',command=deletesubject)
+    updatesubject=Button(course,text='Update Subject',command=updatesubject)
     deletesubject=Button(course,text='Delete Subject',command=deletesubject)
 
     addsubject.grid(row=22,column=0,padx=20,pady=10)
@@ -225,7 +259,7 @@ def facultiesframe():
     pos.set(positiondata[0])
 
 
-    workloadlabel=Label(faculty,text='Work load perday:',font=('Verdana',14))
+    workloadlabel=Label(faculty,text='Work load per day:',font=('Verdana',14))
     workloadlabel.grid(row=6,column=0,pady=10)
 
     workload=Entry(faculty)
@@ -268,7 +302,7 @@ def facultiesframe():
 
     
     staffdetails=firebase.get('/staff',None)
-    print(staffdetails)
+    #print(staffdetails)
 
     # Function to insert items into the tree view
     def insert_into_tree(data):
@@ -319,6 +353,31 @@ def facultiesframe():
         root.destroy()
         facultiesframe()
 
+    def updatestaff():
+        # Get the course code and name from the Entry widgets in your Tkinter GUI
+        staffiddata= facultyid.get()
+        staffname= facultyname.get()
+        mobilenodata= mobile.get()
+        positiondata=position.get()
+        workloaddata=workload.get()
+        
+        datacont={
+        'name':staffname,
+        'position':positiondata,
+        'workload':int(workloaddata),
+        'mobileno':mobilenodata
+        
+        }
+        if staffiddata in staffdetails:
+            ref.child('staff').child(staffiddata).delete()
+            ref.child('staff').update({staffiddata:datacont})
+            messagebox.showinfo("UPDATED", "FACULTY UPDATED SUCCESSFULLY") 
+            root.destroy()
+            facultiesframe()
+
+        else:
+            messagebox.showinfo("INVALID","FACULTY ID NOT AVAILABLE") 
+
 
     #delete subject function definition
     def deletestaff():
@@ -334,7 +393,7 @@ def facultiesframe():
 
 
     addfaculty=Button(faculty,text='Add Faculty',command=addstaff)
-    updatefaculty=Button(faculty,text='Update Faculty')
+    updatefaculty=Button(faculty,text='Update Faculty',command=updatestaff)
     deletefaculty=Button(faculty,text='Delete Faculty',command=deletestaff)
 
     addfaculty.grid(row=22,column=0,padx=20)
@@ -377,7 +436,21 @@ def classframe():
     assignstafflabel.grid(row=4,column=0,padx=20,pady=10)
 
 
-    staffs = ['SATHISHKUMAR', 'SURESHKUMAR', 'MAHESWARI']
+    faculty_ref = db.reference("staff")
+
+    # Get faculty names
+    faculty_data = faculty_ref.get()
+
+
+    # Extract faculty names and details from the data
+    faculty_info = {key: value["name"] for key, value in faculty_data.items()} if faculty_data else {}
+
+    # Print or use the faculty names as needed
+    #print("Faculty Names:", faculty_info)
+
+    
+    staffs = [i for i in faculty_info.values()]
+    print(staffs)
     assignstaff= tk.StringVar()
     
     staff= ttk.Combobox(classes, values=staffs, textvariable=assignstaff)
@@ -431,12 +504,13 @@ def classframe():
         for item in data:
             tree.insert("", "end", iid=f"{item[0]}_{item[1]}", values=(f'{item[0]}_{item[1]}', *item[1:]))
     
-    # Insert items from the nested dictionary
-    for year, sections in classdetails.items():
-        for section, details in sections.items():
-            incharge = details.get('incharge', '')
-            block = details.get('Block', '')
-            tree.insert("", "end",values=(year, section, incharge, block))
+    if classdetails is not None:
+        # Insert items from the nested dictionary
+        for year, sections in classdetails.items():
+            for section, details in sections.items():
+                incharge = details.get('incharge', '')
+                block = details.get('Block', '')
+                tree.insert("", "end",values=(year, section, incharge, block))
 
     # Insert items from the additional list
     # Change font for headings
@@ -454,6 +528,37 @@ def classframe():
     classcontainer.grid_columnconfigure(0, weight=1)
     
     def addsection():
+            yeardata=selected_year.get()
+            sectiondata= section_entry.get()
+            blockdata=block_entry.get()
+            incharge=assignstaff.get()
+            datacont={
+            'incharge':incharge,
+            'Block':blockdata
+            }
+            scheduledata={
+                'Day1':'NA',
+                'Day2':'NA',
+                'Day3':'NA',
+                'Day4':'NA',
+                'Day5':'NA'
+                }
+            hourdata={
+                'hour1':'NA',
+                'hour2':'NA',
+                'hour3':'NA',
+                'hour4':'NA',
+                'hour5':'NA',
+                }
+            ref.child('class').child(yeardata).update({sectiondata:datacont})
+            ref.child('class').child(yeardata).child(sectiondata).update({'schedule':scheduledata})
+            for i in range(1,6):
+                ref.child('class').child(yeardata).child(sectiondata).child('schedule').update({'Day'+str(i):hourdata})
+            messagebox.showinfo("ADDED", "CLASSES SUCCESSFULLY ADDED") 
+            root.destroy()
+            classframe()
+
+    def updateclass():
         yeardata=selected_year.get()
         sectiondata= section_entry.get()
         blockdata=block_entry.get()
@@ -463,10 +568,18 @@ def classframe():
         'incharge':incharge,
         'Block':blockdata
         } 
-        ref.child('class').child(yeardata).update({sectiondata:datacont})
-        messagebox.showinfo("ADDED", "CLASSES SUCCESSFULLY ADDED") 
-        root.destroy()
-        classframe()
+        if yeardata in classdetails and sectiondata in classdetails[yeardata]:
+            ref.child('class').child(yeardata).update({sectiondata:datacont})
+            messagebox.showinfo("ADDED", "CLASS DETAILS SUCCESSFULLY UPDATED") 
+            # Remove the selected option from the combobox
+            staff.delete(staff.curselection())
+            root.destroy()
+            classframe()
+        else:
+            messagebox.showinfo('ERROR','CLASS NOT AVAILABLE')
+
+
+        
     #delete subject function definition
     def deleteclass():
         yeardata=selected_year.get()
@@ -482,53 +595,99 @@ def classframe():
     
     
     addclass=Button(classes,text='Add Class',command=addsection)
-    updateclass=Button(classes,text='Update Class')
+    updateclass=Button(classes,text='Update Class',command=updateclass)
     deleteclass=Button(classes,text='Delete Class',command=deleteclass)
     
     addclass.grid(row=22,column=0,padx=20)
     updateclass.grid(row=22,column=1,padx=20)
     deleteclass.grid(row=22,column=2,padx=20)
+
+
+
+
+def admin():
+    app=Toplevel()
+    app.title('ADMINISTRATOR')
     
-# Header
-Header = Label(text='ADMINISTRATOR', font=('Arial', 24, 'bold'))
-Header.grid(row=0, column=0,columnspan=5)
+    # Header
+    Header = Label(app,text='ADMINISTRATOR', font=('Arial', 24, 'bold'))
+    Header.grid(row=0, column=0,columnspan=5)
 
-# Frame for modification section
-left = Frame(app, width=200, height=200, bg='#b3e0ff')
-left.grid(row=1, column=0, padx=20, pady=10)
+    # Frame for modification section
+    left = Frame(app, width=200, height=200, bg='#b3e0ff')
+    left.grid(row=1, column=0, padx=20, pady=10)
 
-leftheading = Label(left, text='MODIFY',font=('Verdana', 14),bg='#b3e0ff')
-leftheading.grid(row=0, column=0, pady=10)
+    leftheading = Label(left, text='MODIFY',font=('Verdana', 14),bg='#b3e0ff')
+    leftheading.grid(row=0, column=0, pady=10)
 
-# Buttons for modification section
-subject_button= Button(left, text='Course',width=15,height=1,command=subjectframe)
-subject_button.grid(row=1, column=0, padx=20, pady=10)
+    # Buttons for modification section
+    subject_button= Button(left, text='Course',width=15,height=1,command=subjectframe)
+    subject_button.grid(row=1, column=0, padx=20, pady=10)
 
-faculties = Button(left, text='Faculties',width=15,height=1,command=facultiesframe)
-faculties.grid(row=2, column=0, padx=20, pady=10)
+    faculties = Button(left, text='Faculties',width=15,height=1,command=facultiesframe)
+    faculties.grid(row=2, column=0, padx=20, pady=10)
 
-classes = Button(left, text='Classes',width=15,height=1,command=classframe)
-classes.grid(row=3, column=0, padx=20, pady=10)
+    classes = Button(left, text='Classes',width=15,height=1,command=classframe)
+    classes.grid(row=3, column=0, padx=20, pady=10)
 
 
-# Frame for generating section (to generate time table)
-right = Frame(app, bg='#b3e0ff')
-right.grid(row=1, column=1, padx=20, pady=10)
+    # Frame for generating section (to generate time table)
+    right = Frame(app, bg='#b3e0ff')
+    right.grid(row=1, column=1, padx=20, pady=10)
 
-rightheading = Label(right, text='TIME TABLE',font=('Verdana', 14),bg='#b3e0ff')
-rightheading.grid(row=0, column=0, padx=20,pady=10)
+    rightheading = Label(right, text='TIME TABLE',font=('Verdana', 14),bg='#b3e0ff')
+    rightheading.grid(row=0, column=0, padx=20,pady=10)
 
-# Buttons for time table generation section
-schedule = Button(right, text='Schedule Periods',width=15,height=1)
-schedule.grid(row=1, column=0, pady=10)
+    # Buttons for time table generation section
+    schedule = Button(right, text='Schedule Periods',width=15,height=1)
+    schedule.grid(row=1, column=0, pady=10)
 
-viewsection = Button(right, text='View Section-Wise',width=15,height=1)
-viewsection.grid(row=2, column=0, pady=10)
+    viewsection = Button(right, text='View Section-Wise',width=15,height=1)
+    viewsection.grid(row=2, column=0, pady=10)
 
-viewstaff = Button(right, text='View Faculty-Wise',width=15,height=1)
-viewstaff.grid(row=3, column=0, pady=10)
+    viewstaff = Button(right, text='View Faculty-Wise',width=15,height=1)
+    viewstaff.grid(row=3, column=0, pady=10)
+
+
+def resourceframe():
+    root=Toplevel()
+    root.title('RESOURCE ADMIN')
+
+    resourceframe=Frame(root)
+    resourceframe.grid(row=0,column=0,padx=10,pady=20)
+
+    head=Label(resourceframe,text='RESOURCE MANAGER',font=('Verdana',17,'bold'))
+    head.grid(row=0,column=0)
+    
+    subhead=Label(resourceframe,text='ALLOCATE RESOURCES')
+    subhead.grid(row=1,column=0,padx=10)
+    
+    
+    
+
+mainapp.config(bg='#80807F')
+#mainapp
+heading=Label(mainapp,text='AUTOMATED SCHEDULER',font=('Verdana',20,'bold'),fg='white',bg='black')
+heading.grid(row=0,column=0,pady=20,padx=70,columnspan=5)
+
+
+
+headlogin=Button(mainapp,text='ADMINISTRATOR',font=('Verdana',15),width=20,command=admin)
+headlogin.grid(row=1,column=0,pady=20,padx=70,columnspan=5)
+
+resourceadmin=Button(mainapp,text='RESOURCE ALLOCATION',font=('Verdana',15),width=20,command=resourceframe)
+resourceadmin.grid(row=2,column=0,pady=20,padx=70,columnspan=5)
+
+
+departmentadmin=Button(mainapp,text='STAFFS',font=('Verdana',15),width=20)
+departmentadmin.grid(row=3,column=0,pady=20,padx=70,columnspan=5)
 
 
 
 # Running the application
-app.mainloop()
+mainapp.mainloop()
+
+
+
+
+
