@@ -602,6 +602,18 @@ def classframe():
     updateclass.grid(row=22,column=1,padx=20)
     deleteclass.grid(row=22,column=2,padx=20)
 
+    
+def viewschedule():
+    root=Toplevel()
+    head=Label(root,text='SCHEDULE')
+    head.grid(row=0,column=0)
+    for row in range(6):
+        for col in range(5):
+            if col==0:
+                button = tk.Button(root, text='Day'+str(row+1), command=lambda r=row, c=col: button_click(r, c))    
+            else:
+                button = tk.Button(root, text="hour"+str(col+1), command=lambda r=row, c=col: button_click(r, c))
+            button.grid(row=row, column=col, padx=10, pady=5)
 
 
 
@@ -642,7 +654,7 @@ def admin():
     schedule = Button(right, text='Schedule Periods',width=15,height=1)
     schedule.grid(row=1, column=0, pady=10)
 
-    viewsection = Button(right, text='View Section-Wise',width=15,height=1)
+    viewsection = Button(right, text='View Section-Wise',width=15,height=1,command=viewschedule)
     viewsection.grid(row=2, column=0, pady=10)
 
     viewstaff = Button(right, text='View Faculty-Wise',width=15,height=1)
@@ -664,6 +676,8 @@ def resourceframe():
     
     
     
+
+
 
 mainapp.config(bg='#80807F')
 #mainapp
