@@ -1,1 +1,534 @@
+#importing tkinter packages
+import tkinter as tk
+from tkinter import *
+from tkinter import messagebox
+from tkinter import ttk
 
+
+# Creating object for tkinter app
+app = Tk()
+app.title('ADMIN')
+
+
+subjecttype = tk.StringVar()  # Make subjecttype a global variable
+
+import firebase_admin
+from firebase_admin import credentials, db
+from firebase import firebase
+
+
+# Replace the path with the path to your Firebase Admin SDK JSON file
+cred = credentials.Certificate("keys.json")
+firebase_admin.initialize_app(cred, {'databaseURL': 'https://hebertimetable-default-rtdb.firebaseio.com'})
+
+firebase = firebase.FirebaseApplication('https://hebertimetable-default-rtdb.firebaseio.com', None)
+
+# Reference to the 'course' node in the Realtime Database
+ref = db.reference()
+
+def subjectframe():
+    root=Toplevel()
+    root.title('Add/Update Subjects')
+
+    course=Frame(root,pady=20,padx=10)
+    course.grid(row=0,column=0)
+    
+    Head=Label(course,text='Add/Update Subjects',font=('Verdana', 20,'bold'))
+    Head.grid(row=0,column=0,columnspan=3,padx=20)
+
+    righthead=Label(course,text='List Of Subjects',font=('Verdana',20,'bold'))
+    righthead.grid(row=0,column=3,columnspan=3,padx=20)
+
+
+    subhead=Label(course,text='Add information into the following prompt!')
+    subhead.grid(row=1,column=0,columnspan=3,padx=20)
+
+
+    coursecodelabel=Label(course,text='Course Code:',font=('Verdana', 14))
+    coursecodelabel.grid(row=3,column=0,pady=20)
+
+    coursecode=Entry(course)
+    coursecode.grid(row=3,column=1,padx=10)
+    
+    coursenamelabel=Label(course,text='Course Title:',font=('Verdana',14))
+    coursenamelabel.grid(row=4,column=0,pady=10)
+
+    coursename=Entry(course)
+    coursename.grid(row=4,column=1,padx=10)
+
+
+    subjecttypelabel=Label(course,text='Subject Type:',font=('Verdana',14))
+    subjecttypelabel.grid(row=5,column=0,pady=10)
+
+    #subjecttype=StringVar()
+
+    theory=Radiobutton(course,text='Theory',variable=subjecttype,value='theory',font=('Verdana',14))
+    theory.grid(row=5,column=1)
+
+    practical=Radiobutton(course,text='Practical',variable=subjecttype,value='practical',font=('Verdana',14))
+    practical.grid(row=6,column=1)
+
+
+    hourslabel=Label(course,text='Hours perweek',font=('Verdana',14))
+    hourslabel.grid(row=7,column=0,pady=20)
+    
+    hours=Entry(course)
+    hours.grid(row=7,column=1,padx=10)
+    
+    subjectcontainer=Frame(course,width=500,height=300,borderwidth=1,relief='solid')
+    subjectcontainer.grid(row=1,column=4,rowspan=20,padx=20,pady=20)
+
+    
+
+    def on_treeview_scroll(*args):
+        tree.yview(*args)
+
+    def on_treeview_column_resize(event):
+        col_id = tree.identify_column(event.x)
+        tree.column(col_id, width=event.width)
+
+    
+    tree = ttk.Treeview(subjectcontainer, columns=("Column1", "Column2", "Column3","Column4","Column5"))
+
+    # Set center alignment for all columns
+    for col in ("Column1", "Column2", "Column3","Column4","Column5"):
+        tree.column(col, anchor="center",width=140)
+
+
+    # Define column headings
+    tree.heading("Column1", text="COURSE CODE")
+    tree.heading("Column2", text="COURSE TITLE")
+    tree.heading("Column3", text="TYPE")
+    tree.heading("Column4", text="STAFF")
+    tree.heading("Column5",text='HOURS PER WEEk')
+
+    tree.column("#0",width=0)
+
+
+
+    coursedetails=firebase.get('/course',None)
+    #print(coursedetails)
+
+    if coursedetails is not None:
+            for course_code, details in coursedetails.items():
+                course_name = details.get('coursename', '')
+                course_type = details.get('coursetype', '')
+                hourspw=details.get('hours','')
+                try:
+                    staffdata=details.get('staff','')
+                except:
+                    staffdata='not assigned'
+                #yeardet = details.get('year', '')
+                tree.insert("", "end", values=(course_code, course_name, course_type,staffdata,hourspw))
+
+    
+
+    # Insert items from the additional list
+    # Change font for headings
+    style = ttk.Style()
+    style.configure("Treeview.Heading", font=("Arial", 10, "bold"))
+
+    # Add vertical scrollbar
+    scrollbar_y = ttk.Scrollbar(subjectcontainer, orient="vertical", command=on_treeview_scroll)
+    scrollbar_y.grid(row=0, column=1, sticky="ns")
+
+    tree.configure(yscrollcommand=scrollbar_y.set)
+    # Display the treeview
+    tree.grid(row=0, column=0, sticky="w")
+    subjectcontainer.grid_columnconfigure(0, weight=1)
+    
+
+    
+    def adddata(subjecttype):
+        # Get the course code and name from the Entry widgets in your Tkinter GUI
+        coursecodedata = coursecode.get()
+        coursenamedata = coursename.get()
+        subjecttypedata = subjecttype.get()
+        yeardata=year.get()
+        hoursdata=hours.get()
+        datacont={
+        'coursename':coursenamedata,
+        'coursetype':subjecttypedata,
+        'staff':'NA',
+        'hours':hoursdata,
+        'year':yeardata
+        }
+        ref.child('course').update({coursecodedata:datacont})
+        messagebox.showinfo("ADDED", "COURSE SUCCESSFULLY ADDED") 
+        root.destroy()
+        subjectframe()
+    
+
+#delete subject function definition
+    def deletesubject():
+        coursecodedata=coursecode.get()
+        #print(coursecodedata in coursedetails)
+        if coursecodedata in coursedetails:
+            ref.child('course').child(coursecodedata).delete()
+            messagebox.showinfo("DELETED", "COURSE REMOVED SUCCESSFULLY") 
+        else:
+            messagebox.showinfo("INVALID","COURSE NOT AVAILABLE") 
+        root.destroy()
+        subjectframe()
+
+        
+    addsubject = tk.Button(course, text='Add Subject', command=lambda: adddata(subjecttype))
+    updatesubject=Button(course,text='Update Subject',command=deletesubject)
+    deletesubject=Button(course,text='Delete Subject',command=deletesubject)
+
+    addsubject.grid(row=22,column=0,padx=20,pady=10)
+    updatesubject.grid(row=22,column=1,padx=20,pady=10)
+    deletesubject.grid(row=22,column=2,padx=20,pady=10)
+    
+    root.mainloop()
+    
+
+def facultiesframe():
+    root=Toplevel()
+    #root.geometry('600x500')
+    root.title('Add/Update Faculties')
+
+    faculty=Frame(root,pady=20,padx=10)
+    faculty.grid(row=0,column=0)
+    
+    Head=Label(faculty,text='Add/Update Faculty',font=('Verdana', 20,'bold'))
+    Head.grid(row=0,column=0,columnspan=3,padx=20)
+
+    righthead=Label(faculty,text='List Of Faculties',font=('Verdana',20,'bold'))
+    righthead.grid(row=0,column=3,columnspan=3,padx=20)
+
+
+    subhead=Label(faculty,text='Add information into the following prompt!')
+    subhead.grid(row=1,column=0,columnspan=3,padx=20)
+
+
+    facultyidlabel=Label(faculty,text='FacultyId:',font=('Verdana', 14))
+    facultyidlabel.grid(row=3,column=0,pady=20)
+
+    facultyid=Entry(faculty)
+    facultyid.grid(row=3,column=1,padx=10)
+    
+    facultynamelabel=Label(faculty,text='FacultyName:',font=('Verdana',14))
+    facultynamelabel.grid(row=4,column=0,pady=10)
+
+    facultyname=Entry(faculty)
+    facultyname.grid(row=4,column=1,padx=10)
+
+    positionlabel=Label(faculty,text='Select Position',font=('Verdana',14))
+    positionlabel.grid(row=5,column=0,pady=10)
+    
+    positiondata= [ 'HOD','ASSISTANT PROF','ASSOCIATE PROF', 'SENIOR','LAB INCHARGE']
+    position= tk.StringVar()
+    
+    pos= ttk.Combobox(faculty, values=positiondata, textvariable=position)
+    pos.grid(row=5,column=1)
+    pos.set(positiondata[0])
+
+
+    workloadlabel=Label(faculty,text='Work load perday:',font=('Verdana',14))
+    workloadlabel.grid(row=6,column=0,pady=10)
+
+    workload=Entry(faculty)
+    workload.grid(row=6,column=1,padx=10)
+    
+    mobilelabel=Label(faculty,text='Mobile No:',font=('Verdana',14))
+    mobilelabel.grid(row=7,column=0,pady=10)
+
+
+    mobile=Entry(faculty)
+    mobile.grid(row=7,column=1,padx=10)
+    
+    staffcontainer=Frame(faculty,width=500,height=300,borderwidth=1,relief='solid')
+    staffcontainer.grid(row=1,column=4,rowspan=20,padx=20,pady=50)
+
+
+    def on_treeview_scroll(*args):
+        tree.yview(*args)
+
+    def on_treeview_column_resize(event):
+        col_id = tree.identify_column(event.x)
+        tree.column(col_id, width=event.width)
+
+    
+    tree = ttk.Treeview(staffcontainer, columns=("Column1", "Column2", "Column3","Column4","Column5"))
+
+    # Set center alignment for all columns
+    for col in ("Column1", "Column2", "Column3","Column4","Column5"):
+        tree.column(col, anchor="center",width=120)
+
+
+    # Define column headings
+    tree.heading("Column1", text="FACULTY ID")
+    tree.heading("Column2", text="NAME")
+    tree.heading("Column3", text="WORKLOAD")
+    tree.heading("Column4", text="POSITION")
+    tree.heading("Column5",text='MOBILE NO')
+
+    tree.column("#0",width=0)
+
+    
+    staffdetails=firebase.get('/staff',None)
+    print(staffdetails)
+
+    # Function to insert items into the tree view
+    def insert_into_tree(data):
+        for item in data:
+            tree.insert("", "end", iid=f"{item[0]}_{item[1]}", values=(f'{item[0]}_{item[1]}', *item[1:]))
+    if staffdetails is not None:
+        for user_id, details in staffdetails.items():
+            staffnum= details.get('mobileno', '')
+            name = details.get('name', '')
+            workloaddata= details.get('workload', '')
+            staffposition=details.get('position','')
+            tree.insert("", "end", values=(user_id,name,workloaddata,staffposition,staffnum))
+
+    # Insert items from the additional list
+    # Change font for headings
+    style = ttk.Style()
+    style.configure("Treeview.Heading", font=("Arial", 10, "bold"))
+
+
+    # Add vertical scrollbar
+    scrollbar_y = ttk.Scrollbar(staffcontainer, orient="vertical", command=on_treeview_scroll)
+    scrollbar_y.grid(row=0, column=1, sticky="ns")
+
+    tree.configure(yscrollcommand=scrollbar_y.set)
+    # Display the treeview
+    tree.grid(row=0, column=0, sticky="w")
+    staffcontainer.grid_columnconfigure(0, weight=1)
+    
+
+    
+    def addstaff():
+        # Get the course code and name from the Entry widgets in your Tkinter GUI
+        staffid = facultyid.get()
+        staffname= facultyname.get()
+        mobilenodata= mobile.get()
+        positiondata=position.get()
+        workloaddata=workload.get()
+        
+        datacont={
+        'name':staffname,
+        'position':positiondata,
+        'workload':int(workloaddata),
+        'mobileno':mobilenodata
+        
+        } 
+        ref.child('staff').update({staffid:datacont})
+        messagebox.showinfo("ADDED", "STAFF SUCCESSFULLY ADDED")
+        root.destroy()
+        facultiesframe()
+
+
+    #delete subject function definition
+    def deletestaff():
+        facultyiddata=facultyid.get()
+        #print(coursecodedata in coursedetails)
+        if facultyiddata in staffdetails:
+            ref.child('staff').child(facultyiddata).delete()
+            messagebox.showinfo("DELETED", "FACULTY REMOVED SUCCESSFULLY") 
+        else:
+            messagebox.showinfo("INVALID","FACULTY ID NOT AVAILABLE") 
+        root.destroy()
+        facultiesframe()
+
+
+    addfaculty=Button(faculty,text='Add Faculty',command=addstaff)
+    updatefaculty=Button(faculty,text='Update Faculty')
+    deletefaculty=Button(faculty,text='Delete Faculty',command=deletestaff)
+
+    addfaculty.grid(row=22,column=0,padx=20)
+    updatefaculty.grid(row=22,column=1,padx=20)
+    deletefaculty.grid(row=22,column=2,padx=20)
+    
+    root.mainloop()
+
+
+def classframe():
+    root=Toplevel()
+    root.title('Add/Update Classes')
+
+    classes=Frame(root,pady=20,padx=10)
+    classes.grid(row=0,column=0)
+    
+    Head=Label(classes,text='Add/Update Classes',font=('Verdana', 20,'bold'))
+    Head.grid(row=0,column=0,columnspan=3,padx=20)
+
+    righthead=Label(classes,text='List Of Classes',font=('Verdana',20,'bold'))
+    righthead.grid(row=0,column=3,columnspan=3,padx=20)
+
+
+    subhead=Label(classes,text='Add information into the following prompt!')
+    subhead.grid(row=1,column=0,columnspan=3,padx=20)
+
+    classyearlabel=Label(classes,text='Select Year',font=('Verdana',14))
+    classyearlabel.grid(row=2,column=0,padx=20,pady=20)
+
+    year_options = ['Year 1', 'Year 2', 'Year 3']
+    selected_year = tk.StringVar()
+
+    sectionlabel=Label(classes,text='Enter Section',font=('Verdana',14))
+    sectionlabel.grid(row=3,column=0,padx=20,pady=10)
+
+    section_entry=Entry(classes)
+    section_entry.grid(row=3,column=1,padx=20,pady=10)
+
+    assignstafflabel=Label(classes,text='Assign ClassIncharge',font=('Verdana',14))
+    assignstafflabel.grid(row=4,column=0,padx=20,pady=10)
+
+
+    staffs = ['SATHISHKUMAR', 'SURESHKUMAR', 'MAHESWARI']
+    assignstaff= tk.StringVar()
+    
+    staff= ttk.Combobox(classes, values=staffs, textvariable=assignstaff)
+    staff.grid(row=4,column=1)
+    staff.set(staffs[0])
+
+    
+    blocklabel=Label(classes,text='Enter Block',font=('Verdana',14))
+    blocklabel.grid(row=6,column=0,padx=20,pady=10)
+
+    block_entry=Entry(classes)
+    block_entry.grid(row=6,column=1,padx=20)
+    
+    year= ttk.Combobox(classes, values=year_options, textvariable=selected_year)
+    year.grid(row=2, column=1)
+    year.set(year_options[0])
+
+
+    classcontainer=Frame(classes,width=100,height=300,borderwidth=1,relief='solid')
+    classcontainer.grid(row=1,column=4,rowspan=20,pady=20)
+
+    def on_treeview_scroll(*args):
+        tree.yview(*args)
+
+    def on_treeview_column_resize(event):
+        col_id = tree.identify_column(event.x)
+        tree.column(col_id, width=event.width)
+
+    
+    tree = ttk.Treeview(classcontainer, columns=("Column1", "Column2", "Column3","Column4"))
+
+    # Set center alignment for all columns
+    for col in ("Column1", "Column2", "Column3","Column4"):
+        tree.column(col, anchor="center",width=120)
+
+
+    # Define column headings
+    tree.heading("Column1", text="YEAR")
+    tree.heading("Column2", text="SECTION")
+    tree.heading("Column3", text="INCHARGE")
+    tree.heading("Column4", text="BLOCK")
+    
+    tree.column("#0",width=0)
+
+    
+    classdetails=firebase.get('/class',None)
+    #print(classdetails)
+
+    # Function to insert items into the tree view
+    def insert_into_tree(data):
+        for item in data:
+            tree.insert("", "end", iid=f"{item[0]}_{item[1]}", values=(f'{item[0]}_{item[1]}', *item[1:]))
+    
+    # Insert items from the nested dictionary
+    for year, sections in classdetails.items():
+        for section, details in sections.items():
+            incharge = details.get('incharge', '')
+            block = details.get('Block', '')
+            tree.insert("", "end",values=(year, section, incharge, block))
+
+    # Insert items from the additional list
+    # Change font for headings
+    style = ttk.Style()
+    style.configure("Treeview.Heading", font=("Arial", 10, "bold"))
+
+
+    # Add vertical scrollbar
+    scrollbar_y = ttk.Scrollbar(classcontainer, orient="vertical", command=on_treeview_scroll)
+    scrollbar_y.grid(row=0, column=1, sticky="ns")
+
+    tree.configure(yscrollcommand=scrollbar_y.set)
+    # Display the treeview
+    tree.grid(row=0, column=0, sticky="w")
+    classcontainer.grid_columnconfigure(0, weight=1)
+    
+    def addsection():
+        yeardata=selected_year.get()
+        sectiondata= section_entry.get()
+        blockdata=block_entry.get()
+        incharge=assignstaff.get()
+        datacont={
+        'section':sectiondata,
+        'incharge':incharge,
+        'Block':blockdata
+        } 
+        ref.child('class').child(yeardata).update({sectiondata:datacont})
+        messagebox.showinfo("ADDED", "CLASSES SUCCESSFULLY ADDED") 
+        root.destroy()
+        classframe()
+    #delete subject function definition
+    def deleteclass():
+        yeardata=selected_year.get()
+        sectiondata=section_entry.get()
+        #print(coursecodedata in coursedetails)
+        if yeardata in classdetails and sectiondata in classdetails[yeardata]:
+            ref.child('class').child(yeardata).child(sectiondata).delete()
+            messagebox.showinfo("DELETED", "CLASSES REMOVED SUCCESSFULLY")
+            root.destroy()
+            classframe()
+        else:
+            messagebox.showinfo("INVALID", "CLASS NOT AVAILABLE")
+    
+    
+    addclass=Button(classes,text='Add Class',command=addsection)
+    updateclass=Button(classes,text='Update Class')
+    deleteclass=Button(classes,text='Delete Class',command=deleteclass)
+    
+    addclass.grid(row=22,column=0,padx=20)
+    updateclass.grid(row=22,column=1,padx=20)
+    deleteclass.grid(row=22,column=2,padx=20)
+    
+# Header
+Header = Label(text='ADMINISTRATOR', font=('Arial', 24, 'bold'))
+Header.grid(row=0, column=0,columnspan=5)
+
+# Frame for modification section
+left = Frame(app, width=200, height=200, bg='#b3e0ff')
+left.grid(row=1, column=0, padx=20, pady=10)
+
+leftheading = Label(left, text='MODIFY',font=('Verdana', 14),bg='#b3e0ff')
+leftheading.grid(row=0, column=0, pady=10)
+
+# Buttons for modification section
+subject_button= Button(left, text='Course',width=15,height=1,command=subjectframe)
+subject_button.grid(row=1, column=0, padx=20, pady=10)
+
+faculties = Button(left, text='Faculties',width=15,height=1,command=facultiesframe)
+faculties.grid(row=2, column=0, padx=20, pady=10)
+
+classes = Button(left, text='Classes',width=15,height=1,command=classframe)
+classes.grid(row=3, column=0, padx=20, pady=10)
+
+
+# Frame for generating section (to generate time table)
+right = Frame(app, bg='#b3e0ff')
+right.grid(row=1, column=1, padx=20, pady=10)
+
+rightheading = Label(right, text='TIME TABLE',font=('Verdana', 14),bg='#b3e0ff')
+rightheading.grid(row=0, column=0, padx=20,pady=10)
+
+# Buttons for time table generation section
+schedule = Button(right, text='Schedule Periods',width=15,height=1)
+schedule.grid(row=1, column=0, pady=10)
+
+viewsection = Button(right, text='View Section-Wise',width=15,height=1)
+viewsection.grid(row=2, column=0, pady=10)
+
+viewstaff = Button(right, text='View Faculty-Wise',width=15,height=1)
+viewstaff.grid(row=3, column=0, pady=10)
+
+
+
+# Running the application
+app.mainloop()
