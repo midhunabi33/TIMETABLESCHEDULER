@@ -572,7 +572,7 @@ def classframe():
             ref.child('class').child(yeardata).update({sectiondata:datacont})
             messagebox.showinfo("ADDED", "CLASS DETAILS SUCCESSFULLY UPDATED") 
             # Remove the selected option from the combobox
-            staff.delete(staff.curselection())
+            #staff.delete(staff.curselection())
             root.destroy()
             classframe()
         else:
@@ -603,7 +603,7 @@ def classframe():
     deleteclass.grid(row=22,column=2,padx=20)
 
 
-def showtable():
+def showtable(section,year):
     root=Toplevel()
     root.title('Tentative Schedule')
     def destroyschedule():
@@ -617,9 +617,12 @@ def showtable():
             else:
                 button = tk.Button(root, text="hour"+str(col+1), command=lambda r=row, c=col: button_click(r, c),bg='#ff1d1c',font=('Verdana',12))
             button.grid(row=row, column=col, padx=20, pady=10)
-
+    print('section'+section,'year'+year)
+    classdetails=firebase.get('/class',None)
+    print(classdetails)
     #inchargename of this selected class
-    inchname='LINDA HEBSIBA'
+    inchname=classdetails[year][section]['incharge']
+    print(inchname)
     inchargelabel=Label(root,text='ClassIncharge:  '+inchname,font=('Verdana',10))
     inchargelabel.grid(row=7,column=1,columnspan=7)
     
@@ -665,9 +668,11 @@ def viewschedule():
 
     sectionshow= ttk.Combobox(scheduleframe, values=sections, textvariable=selected_section)
     sectionshow.grid(row=1, column=1,padx=20,pady=20)
-    sectionshow.set(sections[0])
 
-    viewbutton=Button(scheduleframe,text='ViewSchedule',font=('Verdana',10),command=showtable)
+    sectiondata=selected_section.get()
+    yeardata=selected_year.get()
+    
+    viewbutton=Button(scheduleframe,text='ViewSchedule',font=('Verdana',10), command=lambda: showtable(sectiondata, yeardata))
     viewbutton.grid(row=2,column=0,padx=10,pady=20,columnspan=2)
 
     resetschedule=Button(scheduleframe,text='ResetSchedule',font=('Verdana',10))
@@ -762,7 +767,6 @@ othercourse.grid(row=3,column=0,pady=20,padx=70,columnspan=5)
 
 # Running the application
 mainapp.mainloop()
-
 
 
 
