@@ -602,21 +602,78 @@ def classframe():
     updateclass.grid(row=22,column=1,padx=20)
     deleteclass.grid(row=22,column=2,padx=20)
 
+
+def showtable():
+    root=Toplevel()
+    root.title('Tentative Schedule')
+    def destroyschedule():
+        root.destroy()
+    head=Label(root,text='TIME TABLE SCHEDULE',font=('Helvetica',20,'bold'))
+    head.grid(row=0,column=0,columnspan=7,pady=20,padx=40)
+    for row in range(1,7):
+        for col in range(1,6):
+            if col==1:
+                button = tk.Button(root, text='Day'+str(row+1), command=lambda r=row, c=col: button_click(r, c),bg='#ffa531',font=('Verdana',12))    
+            else:
+                button = tk.Button(root, text="hour"+str(col+1), command=lambda r=row, c=col: button_click(r, c),bg='#ff1d1c',font=('Verdana',12))
+            button.grid(row=row, column=col, padx=20, pady=10)
+
+    #inchargename of this selected class
+    inchname='LINDA HEBSIBA'
+    inchargelabel=Label(root,text='ClassIncharge:  '+inchname,font=('Verdana',10))
+    inchargelabel.grid(row=7,column=1,columnspan=7)
     
+    goback=Button(root,text='GoBack',font=('Verdana',14),bg='#3f76c0',command=destroyschedule)
+    goback.grid(row=8,column=0,padx=30,pady=30,columnspan=7)
+
 def viewschedule():
     root=Toplevel()
-    head=Label(root,text='SCHEDULE')
-    head.grid(row=0,column=0)
-    for row in range(6):
-        for col in range(5):
-            if col==0:
-                button = tk.Button(root, text='Day'+str(row+1), command=lambda r=row, c=col: button_click(r, c))    
-            else:
-                button = tk.Button(root, text="hour"+str(col+1), command=lambda r=row, c=col: button_click(r, c))
-            button.grid(row=row, column=col, padx=10, pady=5)
+    head=Label(root,text='SCHEDULE',font=('Verdana',20))
+    head.grid(row=0,column=0,padx=20,pady=0)
+    subhead=Label(root,text='view schedule section wise')
+    subhead.grid(row=1,column=0,padx=2)
+
+    scheduleframe=Frame(root)
+    scheduleframe.grid(padx=60,pady=20)
+
+    classlabel=Label(scheduleframe,text='Select year',font=('Verdana',15))
+    classlabel.grid(row=0,column=0)
+
+    year_options = ['Year 1', 'Year 2', 'Year 3']
+    selected_year = tk.StringVar()
 
 
+    year= ttk.Combobox(scheduleframe, values=year_options, textvariable=selected_year)
+    year.grid(row=0, column=1,padx=20,pady=20)
+    year.set(year_options[0])
 
+    sectionlabel=Label(scheduleframe,text='SelectSection',font=('Verdana',15))
+    sectionlabel.grid(row=1,column=0,padx=20,pady=20)
+    
+
+    data=firebase.get('/class',None)
+    sections=[]
+    # Iterate through the nested dictionary
+    for year, sections_dict in data.items():
+        for section in sections_dict.keys():
+            sections.append(section)
+
+    print("Sections:", sections)
+
+    selected_section = tk.StringVar()
+
+
+    sectionshow= ttk.Combobox(scheduleframe, values=sections, textvariable=selected_section)
+    sectionshow.grid(row=1, column=1,padx=20,pady=20)
+    sectionshow.set(sections[0])
+
+    viewbutton=Button(scheduleframe,text='ViewSchedule',font=('Verdana',10),command=showtable)
+    viewbutton.grid(row=2,column=0,padx=10,pady=20,columnspan=2)
+
+    resetschedule=Button(scheduleframe,text='ResetSchedule',font=('Verdana',10))
+    resetschedule.grid(row=2,column=3,padx=10,pady=20,columnspan=2)
+
+    
 def admin():
     app=Toplevel()
     app.title('ADMINISTRATOR')
@@ -661,6 +718,10 @@ def admin():
     viewstaff.grid(row=3, column=0, pady=10)
 
 
+def otherdepartmentschedule():
+    root=Toplevel()
+    root.title(importdata)
+
 def resourceframe():
     root=Toplevel()
     root.title('RESOURCE ADMIN')
@@ -693,8 +754,9 @@ resourceadmin=Button(mainapp,text='RESOURCE ALLOCATION',font=('Verdana',15),widt
 resourceadmin.grid(row=2,column=0,pady=20,padx=70,columnspan=5)
 
 
-departmentadmin=Button(mainapp,text='STAFFS',font=('Verdana',15),width=20)
-departmentadmin.grid(row=3,column=0,pady=20,padx=70,columnspan=5)
+#import time table from other department
+othercourse=Button(mainapp,text='OTHER COURSE',font=('Verdana',15),width=20,command=otherdepartmentschedule)
+othercourse.grid(row=3,column=0,pady=20,padx=70,columnspan=5)
 
 
 
