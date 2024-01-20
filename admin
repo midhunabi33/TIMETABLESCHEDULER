@@ -1,0 +1,84 @@
+import tkinter
+from tkinter import *
+
+import tkinter as tk
+from tkinter import ttk
+from dbconnect import Connect
+from tkinter import messagebox
+
+
+from subject_frame import *
+from faculty_frame import FacultyFrame
+from class_frame import ClassFrame
+
+from viewschedule import Schedule
+
+#color code declarations
+exitcolor='#ff1d1c' #button color for exit button
+backcolor='#87CEEB' #background color for windows
+
+
+class Admin:
+
+    def __init__(self):
+        self.app = Tk()
+        self.app.title('ADMINISTRATOR')
+    
+    def admin(self):
+        self.frame()
+        self.app.mainloop()
+
+    def activateframe(self,x):
+        ob=x()
+        ob.runframe()
+
+    def exits(self):
+        app.destroy()
+
+    def frame(self):
+        # Header
+        Header = Label(self.app,text='ADMINISTRATOR', font=('Arial', 24, 'bold'))
+        Header.grid(row=0, column=0,columnspan=5)
+
+        # Frame for modification section
+        left = Frame(self.app, width=200, height=200, bg='#b3e0ff')
+        left.grid(row=1, column=0, padx=20, pady=10)
+
+        leftheading = Label(left, text='MODIFY',font=('Verdana', 14),bg='#b3e0ff')
+        leftheading.grid(row=0, column=0, pady=10)
+
+        # Buttons for modification section
+        subject_button= Button(left, text='Course',width=15,height=1,command=lambda: self.activateframe(Start))
+        subject_button.grid(row=1, column=0, padx=20, pady=10)
+
+        faculties = Button(left, text='Faculties',width=15,height=1,command=lambda: self.activateframe(FacultyFrame))
+        faculties.grid(row=2, column=0, padx=20, pady=10)
+
+        classes = Button(left, text='Classes',width=15,height=1,command=lambda: self.activateframe(ClassFrame))
+        classes.grid(row=3, column=0, padx=20, pady=10)
+
+
+        # Frame for generating section (to generate time table)
+        right = Frame(self.app, bg='#b3e0ff')
+        right.grid(row=1, column=1, padx=20, pady=10)
+
+        rightheading = Label(right, text='TIME TABLE',font=('Verdana', 14),bg='#b3e0ff')
+        rightheading.grid(row=0, column=0, padx=20,pady=10)
+
+        # Buttons for time table generation section
+        schedule = Button(right, text='Schedule Periods',width=15,height=1)
+        schedule.grid(row=1, column=0, pady=10)
+
+        viewsection = Button(right, text='View Section-Wise',width=15,height=1,command=lambda:self.activateframe(Schedule))
+        viewsection.grid(row=2, column=0, pady=10)
+
+        viewstaff = Button(right, text='View Faculty-Wise',width=15,height=1)
+        viewstaff.grid(row=3, column=0, pady=10)
+
+        goback=Button(self.app,text='Exit',fg='white',font=('Verdana',14,'bold'),bg=exitcolor,command=self.exits)
+        goback.grid(row=4,column=0,padx=10,pady=10,columnspan=3)
+
+
+
+#ob=Admin()
+#ob.admin()
