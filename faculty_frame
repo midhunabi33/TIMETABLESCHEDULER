@@ -1,0 +1,222 @@
+import tkinter
+from tkinter import *
+
+import tkinter as tk
+from tkinter import ttk
+from dbconnect import Connect
+from tkinter import messagebox
+
+
+import firebase_admin
+from firebase_admin import credentials, db
+from firebase import firebase
+
+
+
+
+class FacultyFrame:
+
+    def __init__(self):
+        self.root = Tk()
+        self.ref=Connect()
+        self.selected_year = StringVar()
+        self.tree = ttk.Treeview()
+        self.staffdetails=self.ref.getref().child('staff').get()
+       
+
+    def runframe(self):
+        self.root.title('Add/Update Subjects')
+        self.frame()
+        self.root.mainloop()
+    
+
+    def container(self):
+        self.staffcontainer=Frame(self.faculty,width=500,height=300,borderwidth=1,relief='solid')
+        self.staffcontainer.grid(row=1,column=4,rowspan=20,padx=20,pady=50)
+
+
+        def on_treeview_scroll(*args):
+            self.tree.yview(*args)
+
+        def on_treeview_column_resize(event):
+            col_id = tree.identify_column(event.x)
+            self.tree.column(col_id, width=event.width)
+
+        
+        self.tree = ttk.Treeview(self.staffcontainer, columns=("Column1", "Column2", "Column3","Column4","Column5"))
+
+        # Set center alignment for all columns
+        for col in ("Column1", "Column2", "Column3","Column4","Column5"):
+            self.tree.column(col, anchor="center",width=120)
+
+
+        # Define column headings
+        self.tree.heading("Column1", text="FACULTY ID")
+        self.tree.heading("Column2", text="NAME")
+        self.tree.heading("Column3", text="WORKLOAD")
+        self.tree.heading("Column4", text="POSITION")
+        self.tree.heading("Column5",text='MOBILE NO')
+
+        self.tree.column("#0",width=0)
+
+        self.staffdetails=self.ref.getref().child('staff').get()
+        #staffdetails=firebase.get('/staff',None)
+        #print(staffdetails)
+
+        # Function to insert items into the tree view
+        def insert_into_tree(data):
+            for item in data:
+                self.tree.insert("", "end", iid=f"{item[0]}_{item[1]}", values=(f'{item[0]}_{item[1]}', *item[1:]))
+                
+        if self.staffdetails is not None:
+            for user_id, details in self.staffdetails.items():
+                staffnum= details.get('mobileno', '')
+                name = details.get('name', '')
+                workloaddata= details.get('workload', '')
+                staffposition=details.get('position','')
+                self.tree.insert("", "end", values=(user_id,name,workloaddata,staffposition,staffnum))
+
+        # Insert items from the additional list
+        # Change font for headings
+        style = ttk.Style()
+        style.configure("Treeview.Heading", font=("Arial", 10, "bold"))
+
+
+        # Add vertical scrollbar
+        scrollbar_y = ttk.Scrollbar(self.staffcontainer, orient="vertical", command=on_treeview_scroll)
+        scrollbar_y.grid(row=0, column=1, sticky="ns")
+
+        self.tree.configure(yscrollcommand=scrollbar_y.set)
+        # Display the treeview
+        self.tree.grid(row=0, column=0, sticky="w")
+        self.staffcontainer.grid_columnconfigure(0, weight=1)
+        
+    def addstaff(self):
+        # Get the course code and name from the Entry widgets in your Tkinter GUI
+        staffid = self.facultyid.get()
+        staffname= self.facultyname.get()
+        mobilenodata= self.mobile.get()
+        positiondata=self.position.get()
+        workloaddata=self.workload.get()
+            
+        datacont={
+        'name':staffname,
+        'position':positiondata,
+        'workload':int(workloaddata),
+        'mobileno':mobilenodata,
+        'inchargeof':'NA'
+        }
+        if staffid in self.staffdetails:
+            messagebox.showinfo("ERROR", "STAFF ALREADY EXIST")
+        else:
+            self.ref.getref().child('staff').update({staffid:datacont})
+            messagebox.showinfo("ADDED", "STAFF SUCCESSFULLY ADDED")
+            self.refresh()
+
+            
+    def updatestaff(self):
+        # Get the course code and name from the Entry widgets in your Tkinter GUI
+        staffiddata= self.facultyid.get()
+        staffname= self.facultyname.get()
+        mobilenodata= self.mobile.get()
+        positiondata=self.position.get()
+        workloaddata=self.workload.get()
+            
+        datacont={
+        'name':staffname,
+        'position':positiondata,
+        'workload':int(workloaddata),
+        'mobileno':mobilenodata,
+        'inchargeof':'NA'
+        }
+        if staffiddata in staffdetails:
+            self.ref.getref().child('staff').child(staffiddata).delete()
+            self.ref.getref().child('staff').update({staffiddata:datacont})
+            messagebox.showinfo("UPDATED", "FACULTY UPDATED SUCCESSFULLY") 
+            self.refresh()
+        else:
+            messagebox.showinfo("INVALID","FACULTY ID NOT AVAILABLE") 
+
+
+    #delete subject function definition
+    def deletestaff(self):
+        facultyiddata=self.facultyid.get()
+        #print(coursecodedata in coursedetails)
+        if facultyiddata in self.staffdetails:
+            self.ref.getref().child('staff').child(facultyiddata).delete()
+            messagebox.showinfo("DELETED", "FACULTY REMOVED SUCCESSFULLY") 
+        else:
+            messagebox.showinfo("INVALID","FACULTY ID NOT AVAILABLE") 
+            
+
+    def refresh(self):
+        self.staffcontainer.grid_forget()
+        self.faculty.grid_forget()
+        self.frame()
+        self.container()
+        
+
+    def frame(self):
+        
+        self.faculty=Frame(self.root,pady=20,padx=10)
+        self.faculty.grid(row=0,column=0)
+        
+        Head=Label(self.faculty,text='Add/Update Faculty',font=('Verdana', 20,'bold'))
+        Head.grid(row=0,column=0,columnspan=3,padx=20)
+
+        righthead=Label(self.faculty,text='List Of Faculties',font=('Verdana',20,'bold'))
+        righthead.grid(row=0,column=3,columnspan=3,padx=20)
+
+
+        subhead=Label(self.faculty,text='Add information into the following prompt!')
+        subhead.grid(row=1,column=0,columnspan=3,padx=20)
+
+
+        facultyidlabel=Label(self.faculty,text='FacultyId:',font=('Verdana', 14))
+        facultyidlabel.grid(row=3,column=0,pady=20)
+
+        self.facultyid=Entry(self.faculty)
+        self.facultyid.grid(row=3,column=1,padx=10)
+        
+        facultynamelabel=Label(self.faculty,text='FacultyName:',font=('Verdana',14))
+        facultynamelabel.grid(row=4,column=0,pady=10)
+
+        self.facultyname=Entry(self.faculty)
+        self.facultyname.grid(row=4,column=1,padx=10)
+
+        positionlabel=Label(self.faculty,text='Select Position',font=('Verdana',14))
+        positionlabel.grid(row=5,column=0,pady=10)
+        
+        self.positiondata= [ 'HOD','ASSISTANT PROF','ASSOCIATE PROF', 'SENIOR','LAB INCHARGE']
+        self.position= tk.StringVar()
+        
+        pos= ttk.Combobox(self.faculty, values=self.positiondata, textvariable=self.position)
+        pos.grid(row=5,column=1)
+        pos.set(self.positiondata[0])
+
+
+        workloadlabel=Label(self.faculty,text='Work load per day:',font=('Verdana',14))
+        workloadlabel.grid(row=6,column=0,pady=10)
+
+        self.workload=Entry(self.faculty)
+        self.workload.grid(row=6,column=1,padx=10)
+        
+        mobilelabel=Label(self.faculty,text='Mobile No:',font=('Verdana',14))
+        mobilelabel.grid(row=7,column=0,pady=10)
+
+
+        self.mobile=Entry(self.faculty)
+        self.mobile.grid(row=7,column=1,padx=10)
+        
+        self.container()        
+        
+
+        addfaculty=Button(self.faculty,text='Add Faculty',command=self.addstaff)
+        updatefaculty=Button(self.faculty,text='Update Faculty',command=self.updatestaff)
+        deletefaculty=Button(self.faculty,text='Delete Faculty',command=self.deletestaff)
+
+        addfaculty.grid(row=22,column=0,padx=20)
+        updatefaculty.grid(row=22,column=1,padx=20)
+        deletefaculty.grid(row=22,column=2,padx=20)
+        
+
