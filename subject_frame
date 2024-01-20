@@ -1,0 +1,234 @@
+import tkinter
+from tkinter import *
+
+import tkinter as tk
+from tkinter import ttk
+from dbconnect import Connect
+from tkinter import messagebox
+
+class SubjectFrame:
+    
+    def __init__(self):
+        self.root = Tk()
+        self.ref=Connect()
+        self.selected_year = tk.StringVar()
+        self.tree = ttk.Treeview()  # Initialize an empty Treeview
+        self.coursedetails=self.ref.getref().child('course').get()
+
+    def runframe(self):
+        self.root.title('Add/Update Subjects')
+        self.frame()
+        self.coursedetails = self.ref.getref().child('course').get()
+        self.root.mainloop()
+
+    def addsubject(self,subjecttype):
+        # Get the course code and name from the Entry widgets in your Tkinter GUI
+        coursedetails=self.ref.getref().child('course').get()
+        coursecodedata = self.coursecode.get()
+        coursenamedata = self.coursename.get()
+        subjecttypedata = subjecttype
+        yeardata=self.selected_year.get()
+        hoursdata=self.hours.get()
+        datacont={
+        'coursename':coursenamedata,
+        'coursetype':subjecttypedata,
+        'staff':'NA',
+        'hours':hoursdata,
+        'year':yeardata
+        }
+        print(f"yeardata: {yeardata}")
+        print(f"coursecodedata: {coursecodedata}")
+        if coursecodedata in self.coursedetails:
+            messagebox.showinfo("ERROR", "COURSE ALREADY EXIST")
+        else:
+            self.ref.getref().child('courseyearwise').child(yeardata).update({coursecodedata:datacont})
+            self.ref.getref().child('course').update({coursecodedata:datacont})
+            messagebox.showinfo("ADDED", "COURSE SUCCESSFULLY ADDED") 
+            self.refresh()
+        
+    def updatesubject(self):
+        coursedetails=self.ref.getref().child('course').get()
+        coursecodedata = self.coursecode.get()
+        coursenamedata = self.coursename.get()
+        subjecttypedata = self.subjecttype.get()
+        yeardata=self.selected_year.get()
+        hoursdata=self.hours.get()
+        datacont={
+        'coursename':coursenamedata,
+        'coursetype':subjecttypedata,
+        'staff':'NA',
+        'hours':hoursdata,
+        'year':yeardata
+        }
+        if coursecodedata in coursedetails:
+            self.ref.getref().child('courseyearwise').child(yeardata).update({coursecodedata:datacont})
+            self.ref.getref().child('course').update({coursecodedata:datacont})
+            messagebox.showinfo("UPDATED", "COURSE UPDATED SUCCESSFULLY")
+            self.refresh()
+        else:
+            messagebox.showinfo("INVALID","COURSE NOT AVAILABLE") 
+            
+
+
+    #delete subject function definition
+    def deletesubject(self):
+        self.coursedetails=self.ref.getref().child('course').get()
+        coursecodedata=self.coursecode.get()
+        yearselected=self.selected_year.get()
+        #print(coursecodedata in coursedetails)
+        if coursecodedata in self.coursedetails:
+            self.ref.getref().child('course').child(coursecodedata).delete()
+            self.ref.getref().child('course').child(yearselected).child(coursecodedata).delete()
+            messagebox.showinfo("DELETED", "COURSE REMOVED SUCCESSFULLY")
+            self.refresh()
+        else:
+            messagebox.showinfo("INVALID","COURSE NOT AVAILABLE") 
+
+    def container(self):
+        self.coursedetails=self.ref.getref().child('course').get()
+        self.subjectcontainer=Frame(self.course,width=500,height=300,borderwidth=1,relief='solid')
+        self.subjectcontainer.grid(row=1,column=4,rowspan=20,padx=20,pady=20)
+        
+
+        def on_treeview_scroll(*args):
+            self.tree.yview(*args)
+
+        def on_treeview_column_resize(event):
+            col_id = self.tree.identify_column(event.x)
+            self.tree.column(col_id, width=event.width)
+
+        
+        self.tree = ttk.Treeview(self.subjectcontainer, columns=("Column1", "Column2", "Column3","Column4","Column5"))
+
+        # Set center alignment for all columns
+        for col in ("Column1", "Column2", "Column3","Column4","Column5"):
+            self.tree.column(col, anchor="center",width=150)
+
+
+        # Define column headings
+        self.tree.heading("Column1", text="COURSE CODE")
+        self.tree.heading("Column2", text="COURSE TITLE")
+        self.tree.heading("Column3", text="TYPE")
+        self.tree.heading("Column4", text="STAFF")
+        self.tree.heading("Column5",text='HOURS PER WEEk')
+
+        self.tree.column("#0",width=0)
+
+
+
+        #coursedetails=self.ref.getref().child('course').get()
+        #print(coursedetails)
+
+        if self.coursedetails is not None:
+                for course_code, details in self.coursedetails.items():
+                    course_name = details.get('coursename', '')
+                    course_type = details.get('coursetype', '')
+                    hourspw=details.get('hours','')
+                    try:
+                        staffdata=details.get('staff','')
+                    except:
+                        staffdata='not assigned'
+                    #yeardet = details.get('year', '')
+                    self.tree.insert("", "end", values=(course_code, course_name, course_type,staffdata,hourspw))
+
+        # Insert items from the additional list
+        # Change font for headings
+        style = ttk.Style()
+        style.configure("Treeview.Heading", font=("Arial", 10, "bold"))
+
+        # Add vertical scrollbar
+        scrollbar_y = ttk.Scrollbar(self.subjectcontainer, orient="vertical", command=on_treeview_scroll)
+        scrollbar_y.grid(row=0, column=1, sticky="ns")
+
+        self.tree.configure(yscrollcommand=scrollbar_y.set)
+        # Display the treeview
+        self.tree.grid(row=0, column=0, sticky="w")
+        self.subjectcontainer.grid_columnconfigure(0, weight=1)
+
+
+
+    def refresh(self):
+        self.subjectcontainer.grid_forget()
+        self.container()
+
+        
+    def frame(self):
+        self.subjecttype = StringVar()  # Move this line here    
+        self.course=Frame(self.root,pady=20,padx=10)
+        self.course.grid(row=0,column=0)
+        
+        Head=Label(self.course,text='Add/Update Subjects',font=('Verdana', 20,'bold'))
+        Head.grid(row=0,column=0,columnspan=3,padx=20)
+
+        righthead=Label(self.course,text='List Of Subjects',font=('Verdana',20,'bold'))
+        righthead.grid(row=0,column=3,columnspan=3,padx=20)
+
+
+        subhead=Label(self.course,text='Add information into the following prompt!')
+        subhead.grid(row=1,column=0,columnspan=3,padx=20)
+
+
+        coursecodelabel=Label(self.course,text='Course Code:',font=('Verdana', 14))
+        coursecodelabel.grid(row=3,column=0,pady=20)
+
+        self.coursecode=Entry(self.course)
+        self.coursecode.grid(row=3,column=1,padx=10)
+        
+        coursenamelabel=Label(self.course,text='Course Title:',font=('Verdana',14))
+        coursenamelabel.grid(row=4,column=0,pady=10)
+
+        self.coursename=Entry(self.course)
+        self.coursename.grid(row=4,column=1,padx=10)
+
+
+        subjecttypelabel=Label(self.course,text='Subject Type:',font=('Verdana',14))
+        subjecttypelabel.grid(row=5,column=0,pady=10)
+
+        #subjecttype=StringVar()
+
+        theory=Radiobutton(self.course,text='Theory',variable=self.subjecttype,value='theory',font=('Verdana',14))
+        theory.grid(row=5,column=1)
+
+        practical=Radiobutton(self.course,text='Practical',variable=self.subjecttype,value='practical',font=('Verdana',14))
+        practical.grid(row=6,column=1)
+
+        self.subjecttype.set(theory)
+        
+        yearlabel=Label(self.course,text='Selectyear',font=('Verdana',14))
+        yearlabel.grid(row=7,column=0)
+
+        self.year_options = ['Year 1', 'Year 2', 'Year 3']
+        
+        self.year = ttk.Combobox(self.course, values=self.year_options, textvariable=self.selected_year)
+
+#        self.year= ttk.Combobox(self.course, values=self.year_options, textvariable=self.selected_year)
+        self.year.grid(row=7, column=1)
+        #self.year.set(self.year_options[0])
+
+        
+        hourslabel=Label(self.course,text='Hours perweek',font=('Verdana',14))
+        hourslabel.grid(row=8,column=0,pady=20)
+        
+        self.hours=Entry(self.course)
+        self.hours.grid(row=8,column=1,padx=10)
+        
+
+        self.container()
+
+            
+        addsubject      = Button(self.course, text='Add Subject', command=lambda: self.addsubject(self.subjecttype.get()))
+        updatesubject   = Button(self.course, text='Update Subject', command=self.updatesubject)
+        deletesubject   = Button(self.course, text='Delete Subject', command=self.deletesubject)
+
+        addsubject.grid(row=22,column=0,padx=20,pady=10)
+        updatesubject.grid(row=22,column=1,padx=20,pady=10)
+        deletesubject.grid(row=22,column=2,padx=20,pady=10)
+        
+class Start(SubjectFrame):
+    def runapp(self):
+        ob=SubjectFrame()
+        ob.runframe()
+
+#ob=SubjectFrame()
+#ob.runframe()
+
