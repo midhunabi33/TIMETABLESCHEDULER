@@ -1,11 +1,146 @@
-def viewschedule():
-    root=Toplevel()
-    head=Label(root,text='SCHEDULE')
-    head.grid(row=0,column=0)
-    for row in range(6):
-        for col in range(5):
-            if col==0:
-                button = tk.Button(root, text='Day'+str(row+1), command=lambda r=row, c=col: button_click(r, c))    
-            else:
-                button = tk.Button(root, text="hour"+str(col+1), command=lambda r=row, c=col: button_click(r, c))
-            button.grid(row=row, column=col, padx=10, pady=5)
+#importing tkinter packages
+import tkinter as tk
+from tkinter import *
+from tkinter import messagebox
+from tkinter import ttk
+
+import firebase_admin
+from firebase_admin import credentials, db
+from firebase import firebase
+
+from dbconnect import Connect
+
+class Schedule:
+
+    def __init__(self):
+        self.root = Tk()
+        self.root.title('SCHEDULES')
+        self.ref=Connect()
+        self.selected_year = tk.StringVar()
+        self.selected_section = tk.StringVar()
+        self.classdetails={}
+
+    def exits(self):
+        self.root.destroy()
+
+
+    #to exit from currennt window
+    def destroyschedule(self):
+        self.root.destroy()
+
+
+    def runframe(self):
+        self.frame()    
+        self.root.mainloop()
+
+    def showhourdetail(hourdet):
+        hour=Toplevel()
+        hourdatacontainer=Frame(hour)
+        hourdatacontainer.grid(row=0,column=0,padx=30,pady=10)
+        messagebox.showinfo(hourdet,hourdet)    
+
+
+    #shows tentative schedule of each classes
+    def showtable(self):
+        app=Toplevel()
+        inchname=' '
+        self.sectiondata=self.selected_section.get()
+        self.yeardata=self.selected_year.get()
+        self.classdetails=self.ref.getref().get('/class',None)
+
+        print('section'+self.sectiondata,'year'+self.yeardata)
+        classdata=db.reference('/class').get()
+        print(classdata)
+        #inchargename of this selected class
+        inchname=classdata[self.yeardata][self.sectiondata]['incharge']
+        print(inchname)
+
+        head=Label(app,text='TIME TABLE SCHEDULE',font=('Helvetica',20,'bold'))
+        head.grid(row=0,column=0,columnspan=7,pady=20,padx=40)
+
+        classname=Label(app,text=self.yeardata+'-'+self.sectiondata,font=('Verdana',17,'bold'))
+        classname.grid(row=1,column=0,columnspan=7,pady=20,padx=40)
+
+        dc=1 #daycount for dayorder
+        for row in range(2, 7):
+            hc = 0  # hour count
+            for col in range(1, 7):
+                if col == 1:
+                    button = tk.Button(app, text='Day' + str(dc), bg='#ffa531', font=('Verdana', 12))
+                else:
+                    hourname = 'Day' + str(dc) + 'hour' + str(hc)
+                    button = tk.Button(app, text="hour" + str(hc), command=lambda:showhourdetail(hourname), bg='#ff1d1c', font=('Verdana', 12))
+                    button.hour_id = hourname  # Use a custom attribute to store the identifier
+                    button.tag=hourname
+                hc += 1
+                button.grid(row=row, column=col, padx=20, pady=10)
+            dc+=1
+
+
+            
+        hourdatacontainer=Frame(app,bg='#ffa531')
+        hourdatacontainer.grid(row=7,column=0,padx=40,pady=10,columnspan=10)
+
+        inchargelabel=Label(hourdatacontainer,text='Incharge:   '+inchname,font=('Verdana',13,'bold'))
+        inchargelabel.grid(row=0,column=0,padx=20)
+
+
+    def viewcoursedata():
+        courseframe=Frame(root)
+        headingcourse=Label(root,text='Course Details',font=('Verdana',14))
+        headingcourse.grid(row=10,column=0,pady=20)
+
+        viewcourse=Button(root,text='VIEW COURSE',font=('Verdana',14),command=viewcoursedata)
+        viewcourse.grid(row=8,column=0,padx=20,pady=20,columnspan=7)
+
+            
+        goback=Button(root,text='GoBack',font=('Verdana',14),bg='#483D8B',fg='white',command=destroyschedule)
+        goback.grid(row=9,column=0,padx=30,pady=30,columnspan=7)
+
+    def frame(self):
+        head=Label(self.root,text='TENTATIVE SCHEDULE',font=('Verdana',20,'bold'))
+        head.grid(row=0,column=0,padx=20,pady=0)
+        subhead=Label(self.root,text='view schedule section wise',font=('Verdana',14))
+        subhead.grid(row=1,column=0,padx=2)
+
+        scheduleframe=Frame(self.root)
+        scheduleframe.grid(padx=60,pady=20)
+
+        classlabel=Label(scheduleframe,text='Select Year',font=('Verdana',15))
+        classlabel.grid(row=0,column=0)
+
+        year_options = ['Year 1', 'Year 2', 'Year 3']
+        
+
+        year= ttk.Combobox(scheduleframe, values=year_options, textvariable=self.selected_year)
+        year.grid(row=0, column=1,padx=20,pady=20)
+        year.set(year_options[0])
+
+        sectionlabel=Label(scheduleframe,text='Select Section',font=('Verdana',15))
+        sectionlabel.grid(row=1,column=0,padx=20,pady=20)
+        
+
+        data_tuple = self.ref.getref().get('/class', None)
+        # Unpack the tuple
+        data = data_tuple[0] if data_tuple else {}
+
+        sections = ['A','B','C','D','E','F']
+
+        sectionshow= ttk.Combobox(scheduleframe, values=sections, textvariable=self.selected_section)
+        sectionshow.grid(row=1, column=1,padx=10,pady=20)
+        
+
+        viewbutton=Button(scheduleframe,text='ViewSchedule',font=('Verdana',13), command=self.showtable)
+        viewbutton.grid(row=2,column=0,pady=20)
+
+
+        resetschedule=Button(scheduleframe,text='ResetSchedule',font=('Verdana',13))
+        resetschedule.grid(row=2,column=3,padx=5,pady=20)
+
+
+        goback=Button(scheduleframe,text='Exit',font=('Verdana',14,'bold'),fg='white',bg='#ff1d1c',command=self.exits)
+        goback.grid(row=3,column=0,padx=20,pady=20,columnspan=5)
+
+
+#ob=Schedule()
+#ob.runframe()
