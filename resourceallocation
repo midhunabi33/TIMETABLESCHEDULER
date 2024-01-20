@@ -1,0 +1,14 @@
+class ResourceFrame:
+    def resourceframe():
+        root=Toplevel()
+        root.title('RESOURCE ADMIN')
+
+        resourceframe=Frame(root)
+        resourceframe.grid(row=0,column=0,padx=10,pady=20)
+
+        head=Label(resourceframe,text='RESOURCE MANAGER',font=('Verdana',17,'bold'))
+        head.grid(row=0,column=0)
+        
+        subhead=Label(resourceframe,text='ALLOCATE RESOURCES')
+        subhead.grid(row=1,column=0,padx=10)
+        
