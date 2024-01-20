@@ -1,0 +1,5 @@
+class OtherDep:
+    def otherdepartmentschedule():
+        root=Toplevel()
+        root.title(importdata)
+
