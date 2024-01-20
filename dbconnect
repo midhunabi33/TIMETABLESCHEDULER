@@ -1,0 +1,23 @@
+import firebase_admin
+from firebase_admin import credentials, db
+from firebase import firebase
+
+
+class Connect:
+    _app_initialized = False
+
+    def __init__(self):
+        if not Connect._app_initialized:
+            # Replace the path with the path to your Firebase Admin SDK JSON file
+            cred = credentials.Certificate("keys.json")
+            firebase_admin.initialize_app(cred, {'databaseURL': ''})
+
+            # Avoid naming conflict by not using the same name as the imported module
+            self.firebase_app = firebase.FirebaseApplication('', None)
+            Connect._app_initialized = True
+
+    def getref(self):
+        return db.reference()  # Change to return the database reference
+
+    def get_firebase_app(self):
+        return self.firebase_app
