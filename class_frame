@@ -1,0 +1,253 @@
+import tkinter
+from tkinter import *
+
+import tkinter as tk
+from tkinter import ttk
+from dbconnect import Connect
+from tkinter import messagebox
+
+
+import firebase_admin
+from firebase_admin import credentials, db
+from firebase import firebase
+
+
+class ClassFrame:
+    def __init__(self):
+        self.root = Tk()
+        self.root.title('Add/Update Classes')
+        self.ref=Connect()
+        self.tree = ttk.Treeview()
+        self.selected_year = tk.StringVar()
+        self.classdetails=self.ref.getref().child('class').get()
+        
+
+    def runframe(self):
+        self.frame()
+        self.root.mainloop()
+
+
+    def container(self):
+        self.classcontainer=Frame(self.classes,width=100,height=300,borderwidth=1,relief='solid')
+        self.classcontainer.grid(row=1,column=4,rowspan=20,pady=20)
+        self.classdetails=self.ref.getref().child('class').get()
+        
+        def on_treeview_scroll(*args):
+            tree.yview(*args)
+
+        def on_treeview_column_resize(event):
+            col_id = tree.identify_column(event.x)
+            tree.column(col_id, width=event.width)
+
+        
+        tree = ttk.Treeview(self.classcontainer, columns=("Column1", "Column2", "Column3","Column4"))
+
+        # Set center alignment for all columns
+        for col in ("Column1", "Column2", "Column3","Column4"):
+            tree.column(col, anchor="center",width=120)
+
+
+        # Define column headings
+        tree.heading("Column1", text="YEAR")
+        tree.heading("Column2", text="SECTION")
+        tree.heading("Column3", text="INCHARGE")
+        tree.heading("Column4", text="BLOCK")
+        
+        tree.column("#0",width=0)
+
+        
+        #classdetails=firebase.get('/class',None)
+        #print(classdetails)
+
+        # Function to insert items into the tree view
+        def insert_into_tree(data):
+            for item in data:
+                tree.insert("", "end", iid=f"{item[0]}_{item[1]}", values=(f'{item[0]}_{item[1]}', *item[1:]))
+
+        #print("Class Details:", self.classdetails)  # Add this line for debugging
+
+        if self.classdetails is not None:
+            # Insert items from the nested dictionary
+            for year, sections in self.classdetails.items():
+                if isinstance(sections, list):
+                    # If 'sections' is a list, extract the dictionary from it
+                    sections = sections[1]
+
+                # Check if sections is a dictionary before iterating
+                if isinstance(sections, dict):
+                    for section, details in sections.items():
+                        if isinstance(details, dict):
+                            incharge = details.get('incharge', '')
+                            block = details.get('Block', '')
+                            tree.insert("", "end", values=(year, section, incharge, block))
+
+        # Insert items from the additional list
+        # Change font for headings
+        style = ttk.Style()
+        style.configure("Treeview.Heading", font=("Arial", 10, "bold"))
+
+
+        # Add vertical scrollbar
+        scrollbar_y = ttk.Scrollbar(self.classcontainer, orient="vertical", command=on_treeview_scroll)
+        scrollbar_y.grid(row=0, column=1, sticky="ns")
+
+        tree.configure(yscrollcommand=scrollbar_y.set)
+        # Display the treeview
+        tree.grid(row=0, column=0, sticky="w")
+        self.classcontainer.grid_columnconfigure(0, weight=1)
+
+    
+    def addsection(self):
+            yeardata=self.selected_year.get()
+            sectiondata= self.section_entry.get()
+            blockdata=self.block_entry.get()
+            incharge=self.assignstaff.get()
+            datacont={
+            'incharge':incharge,
+            'Block':blockdata
+            }
+            scheduledata={
+            'Day1':'NA',
+            'Day2':'NA',
+            'Day3':'NA',
+            'Day4':'NA',
+            'Day5':'NA'
+            }
+            hourdata={
+                'hour1':'NA',
+                'hour2':'NA',
+                'hour3':'NA',
+                'hour4':'NA',
+                'hour5':'NA',
+                    }
+            classdata=yeardata+sectiondata
+            self.ref.getref().child('class').child(yeardata).update({sectiondata:datacont})
+            self.ref.getref().child('class').child(yeardata).child(sectiondata).update({'schedule':scheduledata})
+            #self.ref.getref().child('staff').child(self.assignstaff).update({'inchargeof':classdata})
+            for i in range(1,6):
+                self.ref.getref().child('class').child(yeardata).child(sectiondata).child('schedule').update({'Day'+str(i):hourdata})
+            if yeardata in self.classdetails and sectiondata in self.classdetails[yeardata]:
+                messagebox.showinfo("ERROR", "CLASS ALREADY EXISTS")
+            else:
+                ref.child('class').child(yeardata).update({sectiondata:datacont})
+                messagebox.showinfo("ADDED", "CLASSES SUCCESSFULLY ADDED") 
+                self.refresh()
+            
+    def updateclass(self):
+        yeardata=self.selected_year.get()
+        sectiondata= self.section_entry.get()
+        blockdata=self.block_entry.get()
+        incharge=self.assignstaff.get()
+        datacont={
+        'section':sectiondata,
+        'incharge':incharge,
+        'Block':blockdata
+        } 
+        if yeardata in self.classdetails and sectiondata in self.classdetails[yeardata]:
+            ref.child('class').child(yeardata).update({sectiondata:datacont})
+            messagebox.showinfo("ADDED", "CLASS DETAILS SUCCESSFULLY UPDATED")
+            self.refresh()
+        else:
+            messagebox.showinfo('ERROR','CLASS NOT AVAILABLE')
+
+            
+    #delete subject function definition
+    def deleteclass(self):
+        yeardata=self.selected_year.get()
+        sectiondata=self.section_entry.get()
+        #print(coursecodedata in coursedetails)
+        if yeardata in self.classdetails and sectiondata in self.classdetails[yeardata]:
+            self.ref.getref().child('class').child(yeardata).child(sectiondata).delete()
+            messagebox.showinfo("DELETED", "CLASSES REMOVED SUCCESSFULLY")
+            self.refresh()
+        else:
+            messagebox.showinfo("INVALID", "CLASS NOT AVAILABLE")
+        
+        
+    def refresh(self):
+        self.classcontainer.grid_forget()
+        self.classes.grid_forget()
+        self.frame()
+        self.container()
+        
+
+    def frame(self):
+        self.classes=Frame(self.root,pady=20,padx=10)
+        self.classes.grid(row=0,column=0)
+        
+        Head=Label(self.classes,text='Add/Update Classes',font=('Verdana', 20,'bold'))
+        Head.grid(row=0,column=0,columnspan=3,padx=20)
+
+        righthead=Label(self.classes,text='List Of Classes',font=('Verdana',20,'bold'))
+        righthead.grid(row=0,column=3,columnspan=3,padx=20)
+
+
+        subhead=Label(self.classes,text='Add information into the following prompt!')
+        subhead.grid(row=1,column=0,columnspan=3,padx=20)
+
+        classyearlabel=Label(self.classes,text='Select Year',font=('Verdana',14))
+        classyearlabel.grid(row=2,column=0,padx=20,pady=20)
+
+        year_options = ['Year 1', 'Year 2', 'Year 3']
+        
+
+        sectionlabel=Label(self.classes,text='Enter Section',font=('Verdana',14))
+        sectionlabel.grid(row=3,column=0,padx=20,pady=10)
+
+        self.section_entry=Entry(self.classes)
+        self.section_entry.grid(row=3,column=1,padx=20,pady=10)
+
+        assignstafflabel=Label(self.classes,text='Assign ClassIncharge',font=('Verdana',14))
+        assignstafflabel.grid(row=4,column=0,padx=20,pady=10)
+
+
+        faculty_ref = db.reference("staff")
+
+        # Get faculty names
+        faculty_data = faculty_ref.get()
+
+
+        # Extract faculty names and details from the data
+        faculty_info = {key: value["name"] for key, value in faculty_data.items()} if faculty_data else {}
+
+        # Print or use the faculty names as needed
+        #print("Faculty Names:", faculty_info)
+
+        
+        staffs = [i for i in faculty_info.values()]
+        print(staffs)
+        self.assignstaff= tk.StringVar()
+        
+        staff= ttk.Combobox(self.classes, values=staffs, textvariable=self.assignstaff)
+        staff.grid(row=4,column=1)
+        staff.set(staffs[0])
+
+        
+        blocklabel=Label(self.classes,text='Enter Block',font=('Verdana',14))
+        blocklabel.grid(row=6,column=0,padx=20,pady=10)
+
+        self.block_entry=Entry(self.classes)
+        self.block_entry.grid(row=6,column=1,padx=20)
+        
+        self.year= ttk.Combobox(self.classes, values=year_options, textvariable=self.selected_year)
+        self.year.grid(row=2, column=1)
+        self.year.set(year_options[0])
+
+        self.container()
+
+        
+        addclass=Button(self.classes,text='Add Class',command=self.addsection)
+        updateclass=Button(self.classes,text='Update Class',command=self.updateclass)
+        deleteclass=Button(self.classes,text='Delete Class',command=self.deleteclass)
+        
+        addclass.grid(row=22,column=0,padx=20)
+        updateclass.grid(row=22,column=1,padx=20)
+        deleteclass.grid(row=22,column=2,padx=20)
+
+
+
+                
+#ob=ClassFrame()
+#ob.runframe()
+
+
